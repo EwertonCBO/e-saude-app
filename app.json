@@ -1,19 +1,37 @@
 {
   "expo": {
-    "name": "Autocusto-app",
-    "slug": "Autocusto-app",
+    "name": "Altocusto-app",
+    "slug": "Altocusto-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permita que o Altocusto Fácil use a câmera para fotografar sua receita.",
+          "photosPermission": "Permita que o Altocusto Fácil acesse documentos e imagens selecionados.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permita que o Altocusto Fácil use sua localização para encontrar a unidade mais próxima."
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ewerton.esaudeapp"
     },
     "android": {
       "package": "com.ewerton.esaudeapp",
@@ -22,15 +40,20 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "ac8b3d04-a88f-4b1c-9db2-7229deec85df"
+        "projectId": "8e6666c2-695f-482c-b4eb-91d3a2a9aaec"
       }
-    }
+    },
+    "owner": "matheusmoraisdev"
   }
 }

@@ -1,15 +1,43 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, View, StyleSheet } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSQLiteContext } from 'expo-sqlite';
 import { COLORS } from '../theme';
+import { authenticate } from '../database/repositories';
+import { useAuth } from '../context/AuthContext';
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen() {
+  const db = useSQLiteContext();
+  const { signIn } = useAuth();
+  const [cpf, setCpf] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async () => {
+    if (!cpf || !password) {
+      Alert.alert('Dados incompletos', 'Informe o CPF e a senha.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const user = await authenticate(db, cpf, password);
+      if (!user) {
+        Alert.alert('Acesso não autorizado', 'CPF ou senha inválidos.');
+        return;
+      }
+      await signIn(user.id);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* LOGO */}
         <View style={styles.logoContainer}>
           <View style={styles.logoIcon}>
@@ -17,7 +45,7 @@ export default function LoginScreen({ navigation }: any) {
             <MaterialCommunityIcons name="plus" size={32} color={COLORS.white} style={styles.logoPlus} />
           </View>
           <Text variant="headlineLarge" style={styles.logoText}>
-            AutoCusto Fácil
+            Altocusto Fácil
           </Text>
         </View>
 
@@ -26,6 +54,8 @@ export default function LoginScreen({ navigation }: any) {
           <TextInput
             mode="outlined"
             placeholder="Digite seu CPF"
+            value={cpf}
+            onChangeText={setCpf}
             left={<TextInput.Icon icon="card-account-details-outline" color={COLORS.neutralMedium} />}
             style={styles.input}
             outlineColor={COLORS.divider}
@@ -35,36 +65,37 @@ export default function LoginScreen({ navigation }: any) {
           <TextInput
             mode="outlined"
             placeholder="Digite sua senha"
+            value={password}
+            onChangeText={setPassword}
             secureTextEntry
             left={<TextInput.Icon icon="lock-outline" color={COLORS.neutralMedium} />}
             style={styles.input}
             outlineColor={COLORS.divider}
             activeOutlineColor={COLORS.primary}
           />
-          
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
-          </TouchableOpacity>
 
-          <Button 
-            mode="contained" 
-            onPress={() => navigation.navigate('MainTabs')}
+          <View style={styles.demoCredentials}>
+            <MaterialCommunityIcons name="information-outline" size={20} color={COLORS.primaryGreenDark} />
+            <Text style={styles.demoCredentialsText}>
+              Demonstração: CPF 123.456.789-00 e senha 1234
+            </Text>
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={handleLogin}
+            loading={isSubmitting}
+            disabled={isSubmitting}
             style={styles.loginButton}
             labelStyle={styles.loginButtonLabel}
           >
             Entrar
           </Button>
 
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Não possui uma conta? </Text>
-            <TouchableOpacity>
-              <Text style={styles.signupLink}>Cadastre-se</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
       </View>
-      
+
       {/* Decorative Footer Area */}
       <View style={styles.footerDecoration}>
         <MaterialCommunityIcons name="city-variant-outline" size={100} color={COLORS.primaryGreenLight} style={{ opacity: 0.3 }} />
@@ -110,13 +141,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: COLORS.white,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  demoCredentials: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryGreenSoft,
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 24,
   },
-  forgotPasswordText: {
-    color: COLORS.neutralMedium,
-    fontSize: 14,
+  demoCredentialsText: {
+    flex: 1,
+    color: COLORS.primaryGreenDark,
+    fontSize: 13,
+    lineHeight: 18,
+    marginLeft: 8,
   },
   loginButton: {
     borderRadius: 24,
@@ -138,18 +176,4 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     zIndex: 1,
   },
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  signupText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-  },
-  signupLink: {
-    color: COLORS.primaryGreen,
-    fontSize: 15,
-    fontWeight: 'bold',
-  }
 });

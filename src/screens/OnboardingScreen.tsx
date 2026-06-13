@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../theme';
-
-const { width } = Dimensions.get('window');
+import { useAuth } from '../context/AuthContext';
 
 const SLIDES = [
   {
@@ -28,20 +27,20 @@ const SLIDES = [
   }
 ];
 
-export default function OnboardingScreen({ navigation }: any) {
+export default function OnboardingScreen() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { completeOnboarding } = useAuth();
 
   const nextSlide = () => {
     if (currentSlide < SLIDES.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      // Concluiu Onboarding, envia para tela de Autenticação/Login
-      navigation.replace('Login');
+      completeOnboarding();
     }
   };
 
   const skipOnboarding = () => {
-    navigation.replace('Login');
+    completeOnboarding();
   };
 
   const slide = SLIDES[currentSlide];
@@ -56,11 +55,11 @@ export default function OnboardingScreen({ navigation }: any) {
       </View>
 
       <View style={styles.content}>
-        
+
         {/* LOGO SIMPLIFICADA */}
         <View style={styles.logoContainer}>
           <MaterialCommunityIcons name="heart-pulse" size={60} color={COLORS.primaryGreen} />
-          <Text style={styles.logoText}>AutoCusto Fácil</Text>
+          <Text style={styles.logoText}>Altocusto Fácil</Text>
         </View>
 
         {/* ILUSTRAÇÃO/ICONE */}
@@ -75,24 +74,24 @@ export default function OnboardingScreen({ navigation }: any) {
         </View>
 
       </View>
-      
+
       {/* FOOTER: INDICADORES E BOTÃO */}
       <View style={styles.footer}>
         <View style={styles.indicatorContainer}>
           {SLIDES.map((_, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               style={[
-                styles.indicator, 
+                styles.indicator,
                 currentSlide === index && styles.activeIndicator
-              ]} 
+              ]}
             />
           ))}
         </View>
 
-        <Button 
-          mode="contained" 
-          onPress={nextSlide} 
+        <Button
+          mode="contained"
+          onPress={nextSlide}
           style={styles.actionButton}
           labelStyle={styles.actionButtonLabel}
           contentStyle={{ height: 50 }}
