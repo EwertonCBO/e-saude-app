@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +36,19 @@ const RENEWAL_REASONS = [
   'Outro',
 ] as const;
 
+const HIGH_COST_MEDICATIONS = [
+  'Adalimumabe (Humira)',
+  'Infliximabe (Remicade)',
+  'Etanercepte (Enbrel)',
+  'Rituximabe (MabThera)',
+  'Secuquinumabe (Cosentyx)',
+  'Ustequinumabe (Stelara)',
+  'Vedolizumabe (Entyvio)',
+  'Golimumabe (Simponi)',
+  'Tocilizumabe (Actemra)',
+  'Omalizumabe (Xolair)',
+];
+
 function toDateString(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -55,12 +68,14 @@ export default function SchedulingScreen() {
   const [showForm, setShowForm] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [medicationName, setMedicationName] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [requestReason, setRequestReason] = useState<string>(RENEWAL_REASONS[0]);
   const [otherReason, setOtherReason] = useState('');
   const [expirationDate, setExpirationDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [appointments, setAppointments] = useState<Teleconsultation[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasPreFilled = useRef(false);
 
   const loadData = useCallback(async () => {
     if (!userId) {
@@ -70,12 +85,13 @@ export default function SchedulingScreen() {
       getPrescription(db, userId),
       getTeleconsultations(db, userId),
     ]);
-    if (prescription && !medicationName) {
+    if (prescription && !hasPreFilled.current) {
       setMedicationName(prescription.medicationName);
       setExpirationDate(new Date(`${prescription.expiresAt}T12:00:00`));
+      hasPreFilled.current = true;
     }
     setAppointments(nextAppointments);
-  }, [db, medicationName, userId]);
+  }, [db, userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,6 +107,10 @@ export default function SchedulingScreen() {
       setExpirationDate(date);
     }
   };
+
+  const filteredMedications = HIGH_COST_MEDICATIONS.filter(med => 
+    med.toLowerCase().includes(medicationName.toLowerCase())
+  );
 
   const submit = async () => {
     const finalReason = requestReason === 'Outro'
@@ -135,7 +155,7 @@ export default function SchedulingScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {!showForm ? (
           <>
             <Text style={styles.intro}>
@@ -209,13 +229,38 @@ export default function SchedulingScreen() {
               <Text style={styles.formBackText}>Escolher outro atendimento</Text>
             </TouchableOpacity>
             <Text style={styles.formTitle}>Renovação de Receita de Alto Custo</Text>
-            <TextInput
-              mode="outlined"
-              label="Nome do medicamento"
-              value={medicationName}
-              onChangeText={setMedicationName}
-              style={styles.input}
-            />
+            <View style={styles.autocompleteContainer}>
+              <TextInput
+                mode="outlined"
+                label="Nome do medicamento"
+                value={medicationName}
+                onChangeText={(text) => {
+                  setMedicationName(text);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+                style={styles.input}
+              />
+              {showSuggestions && filteredMedications.length > 0 && (
+                <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={styles.suggestionsList}>
+                  {filteredMedications.map(med => (
+                    <TouchableOpacity 
+                      key={med} 
+                      style={styles.suggestionItem}
+                      onPress={() => {
+                        setMedicationName(med);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <Text style={styles.suggestionText}>{med}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
             <Text style={styles.fieldLabel}>Motivo da solicitação</Text>
             <View style={styles.reasonList}>
               {RENEWAL_REASONS.map((reason) => {
@@ -380,6 +425,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: { marginBottom: 15, backgroundColor: COLORS.white },
+  autocompleteContainer: { zIndex: 1 },
+  suggestionsList: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.primaryGreenSoft,
+    borderRadius: 8,
+    marginTop: -10,
+    marginBottom: 15,
+    maxHeight: 180,
+    elevation: 3,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.offWhite,
+  },
+  suggestionText: {
+    color: COLORS.neutralDark,
+    fontSize: 14,
+  },
   dateField: {
     minHeight: 62,
     borderWidth: 1,
